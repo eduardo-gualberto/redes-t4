@@ -74,28 +74,49 @@ class Enlace:
     def gerenciar_pacotes(self, dados: str):
         END_count = dados.count(b'\xc0')
         dados_sep = dados.split(b'\xc0')
-
+        skip = False
+        print('dados: ', dados)
         if dados.startswith(b'\xc0') and self.prev_dtg != b'':
-            self.callback(self.prev_dtg)
+            print('1')
+            env = self.prev_dtg.replace(b'\xdb\xdd', b'\xdb')
+            env = env.replace(b'\xdb\xdc', b'\xc0')
+            self.callback(env)
+            # self.callback(self.prev_dtg)
             self.prev_dtg = b''
+
+        if not dados.startswith(b'\xc0') and END_count > 0 and self.prev_dtg != b'':
+            print('2')
+            env = (self.prev_dtg + dados_sep[0]).replace(b'\xdb\xdd', b'\xdb')
+            env = env.replace(b'\xdb\xdc', b'\xc0')
+            self.callback(env)
+            # self.callback(self.prev_dtg + dados_sep[0])
+            self.prev_dtg = b''
+            dados_sep.pop(0)
+            skip = True
 
         if dados_sep[-1] != b'':
             self.prev_dtg += dados_sep[-1]
+            print('buffer: ', self.prev_dtg)
             dados_sep = dados_sep[:-1]
+            if skip == True:
+                return
         dados_sep = list(filter(lambda x: x != b'', dados_sep))
 
-        if not dados.startswith(b'\xc0') and END_count > 0 and self.prev_dtg != b'':
-            self.callback(self.prev_dtg + dados_sep[0])
-            self.prev_dtg = b''
-            dados_sep.pop(0)
-
-        if len(dados_sep) == 0 and self.prev_dtg != b'' and not dados.startswith(b'\xc0') and END_count > 0:
-            self.callback(self.prev_dtg)
+        if not skip and len(dados_sep) == 0 and self.prev_dtg != b'' and not dados.startswith(b'\xc0') and END_count > 0:
+            print('3')
+            env = self.prev_dtg.replace(b'\xdb\xdd', b'\xdb')
+            env = env.replace(b'\xdb\xdc', b'\xc0')
+            self.callback(env)
+            # self.callback(self.prev_dtg)
             self.prev_dtg = b''
             return
 
         for d in dados_sep:
-            self.callback(d)
+            print('4')
+            env = d.replace(b'\xdb\xdd', b'\xdb')
+            env = env.replace(b'\xdb\xdc', b'\xc0')
+            self.callback(env)
+            # self.callback(d)
 
     def __raw_recv(self, dados: str):
         # TODO: Preencha aqui com o código para receber dados da linha serial.
