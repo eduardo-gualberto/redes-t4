@@ -71,38 +71,31 @@ class Enlace:
         dtg = self.tratar_datagrama_saida(datagrama)
         self.linha_serial.enviar(dtg)
 
-    def separar_pacotes(self, dados: str):
+    def gerenciar_pacotes(self, dados: str):
         END_count = dados.count(b'\xc0')
         dados_sep = dados.split(b'\xc0')
 
         if dados.startswith(b'\xc0') and self.prev_dtg != b'':
-            print('caso1')
             self.callback(self.prev_dtg)
             self.prev_dtg = b''
 
         if dados_sep[-1] != b'':
             self.prev_dtg += dados_sep[-1]
-            print("buffer: ", self.prev_dtg)
             dados_sep = dados_sep[:-1]
         dados_sep = list(filter(lambda x: x != b'', dados_sep))
-        print("depois filter: ", dados_sep)
 
         if not dados.startswith(b'\xc0') and END_count > 0 and self.prev_dtg != b'':
-            print('caso2')
             self.callback(self.prev_dtg + dados_sep[0])
             self.prev_dtg = b''
             dados_sep.pop(0)
 
         if len(dados_sep) == 0 and self.prev_dtg != b'' and not dados.startswith(b'\xc0') and END_count > 0:
-            print('caso3')
             self.callback(self.prev_dtg)
             self.prev_dtg = b''
             return
 
         for d in dados_sep:
             self.callback(d)
-        print(dados_sep)
-        pass
 
     def __raw_recv(self, dados: str):
         # TODO: Preencha aqui com o código para receber dados da linha serial.
@@ -112,6 +105,4 @@ class Enlace:
         # vir quebrado de várias formas diferentes - por exemplo, podem vir
         # apenas pedaços de um quadro, ou um pedaço de quadro seguido de um
         # pedaço de outro, ou vários quadros de uma vez só.
-        print("recebido: ", dados)
-
-        dados_sep = self.separar_pacotes(dados)
+        self.gerenciar_pacotes(dados)
