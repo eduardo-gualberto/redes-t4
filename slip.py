@@ -1,3 +1,6 @@
+from typing import NamedTuple
+import re
+
 class CamadaEnlace:
     ignore_checksum = False
 
@@ -41,8 +44,21 @@ class CamadaEnlace:
 
 class Enlace:
     def __init__(self, linha_serial):
+        self.prev_dtg = b''
         self.linha_serial = linha_serial
         self.linha_serial.registrar_recebedor(self.__raw_recv)
+
+    def tratar_datagrama_saida(self, datagrama: str):
+        dtg = datagrama.replace(b'\xdb', b'\xdb\xdd')
+        dtg = dtg.replace(b'\xc0', b'\xdb\xdc')
+        dtg = b'\xc0' + dtg + b'\xc0'
+        return dtg
+
+    def tratar_datagrama_entrada(self, datagrama: str):
+        dtg = datagrama.replace(b'\xdb\xdc', b'\xc0')
+        dtg = dtg.replace(b'\xdb\xdd', b'\xdb')
+        dtg = dtg.strip(b'\xc0')
+        return dtg
 
     def registrar_recebedor(self, callback):
         self.callback = callback
@@ -51,9 +67,21 @@ class Enlace:
         # TODO: Preencha aqui com o código para enviar o datagrama pela linha
         # serial, fazendo corretamente a delimitação de quadros e o escape de
         # sequências especiais, de acordo com o protocolo CamadaEnlace (RFC 1055).
+        dtg = self.tratar_datagrama_saida(datagrama)
+        self.linha_serial.enviar(dtg)
+
+    def gerenciar_pacotes(self, dados):
         pass
 
-    def __raw_recv(self, dados):
+    def split_dados(self, dados: str):
+        dados_sep = dados.split(b'\xc0')
+        if dados_sep[-1] != b'':
+            self.prev_dtg += dados_sep[-1]
+            dados_sep = dados_sep[:-1]
+        dados_sep = list(filter(lambda x: x != b''),dados_sep)
+        pass
+
+    def __raw_recv(self, dados: str):
         # TODO: Preencha aqui com o código para receber dados da linha serial.
         # Trate corretamente as sequências de escape. Quando ler um quadro
         # completo, repasse o datagrama contido nesse quadro para a camada
@@ -61,4 +89,8 @@ class Enlace:
         # vir quebrado de várias formas diferentes - por exemplo, podem vir
         # apenas pedaços de um quadro, ou um pedaço de quadro seguido de um
         # pedaço de outro, ou vários quadros de uma vez só.
-        pass
+        print("recebido: ", dados)
+
+        dados_sep = self.split_dados(dados)
+        for dado in dados_sep:
+            self.gerenciar_pacotes(dado)
