@@ -75,9 +75,7 @@ class Enlace:
         END_count = dados.count(b'\xc0')
         dados_sep = dados.split(b'\xc0')
         skip = False
-        print('dados: ', dados)
         if dados.startswith(b'\xc0') and self.prev_dtg != b'':
-            print('1')
             env = self.prev_dtg.replace(b'\xdb\xdd', b'\xdb')
             env = env.replace(b'\xdb\xdc', b'\xc0')
             self.callback(env)
@@ -85,7 +83,6 @@ class Enlace:
             self.prev_dtg = b''
 
         if not dados.startswith(b'\xc0') and END_count > 0 and self.prev_dtg != b'':
-            print('2')
             env = (self.prev_dtg + dados_sep[0]).replace(b'\xdb\xdd', b'\xdb')
             env = env.replace(b'\xdb\xdc', b'\xc0')
             self.callback(env)
@@ -96,14 +93,12 @@ class Enlace:
 
         if dados_sep[-1] != b'':
             self.prev_dtg += dados_sep[-1]
-            print('buffer: ', self.prev_dtg)
             dados_sep = dados_sep[:-1]
             if skip == True:
                 return
         dados_sep = list(filter(lambda x: x != b'', dados_sep))
 
         if not skip and len(dados_sep) == 0 and self.prev_dtg != b'' and not dados.startswith(b'\xc0') and END_count > 0:
-            print('3')
             env = self.prev_dtg.replace(b'\xdb\xdd', b'\xdb')
             env = env.replace(b'\xdb\xdc', b'\xc0')
             self.callback(env)
@@ -112,7 +107,6 @@ class Enlace:
             return
 
         for d in dados_sep:
-            print('4')
             env = d.replace(b'\xdb\xdd', b'\xdb')
             env = env.replace(b'\xdb\xdc', b'\xc0')
             self.callback(env)
